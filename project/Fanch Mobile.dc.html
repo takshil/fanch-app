@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/modernist-14de345d-b19c-4d1a-b6a1-c2afc0f56c4e/styles.css">
+  <script src="_ds/modernist-14de345d-b19c-4d1a-b6a1-c2afc0f56c4e/_ds_bundle.js"></script>
+  <style>
+    html,body{margin:0;padding:0;background:var(--color-bg);}
+    a{color:var(--color-accent-700);text-decoration:none;} a:hover{color:var(--color-accent);}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);display:flex;gap:40px;padding:48px;justify-content:center;align-items:flex-start;font-family:var(--font-body);color:var(--color-text)">
+  <aside style="width:230px;flex:none;position:sticky;top:48px">
+    <div style="font:800 26px var(--font-heading);letter-spacing:-0.02em">FANCH</div>
+    <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent);margin-top:4px">Module séries — V1</div>
+    <div style="height:2px;background:var(--color-divider);margin:16px 0"></div>
+    <sc-for list="{{ sidebar }}" as="s" hint-placeholder-count="10">
+      <div onClick="{{ s.go }}" style="cursor:pointer;padding:9px 12px;border-left:{{ s.border }};color:{{ s.color }};font:600 13px var(--font-body);text-transform:uppercase;letter-spacing:0.05em" style-hover="color:var(--color-accent-600)">{{ s.label }}</div>
+    </sc-for>
+    <div style="height:2px;background:var(--color-divider);margin:16px 0"></div>
+    <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);line-height:1.5">Prototype cliquable — la navigation interne (onglets, cartes, boutons) fonctionne aussi.</div>
+  </aside>
+
+  <div style="width:390px;height:844px;flex:none;border:2px solid var(--color-text);background:var(--color-bg);display:flex;flex-direction:column;position:relative;overflow:hidden">
+    <div style="height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:2px solid var(--color-divider);font:600 12px var(--font-body)">
+      <span>21:37</span><span style="letter-spacing:0.06em">FANCH&nbsp;·&nbsp;100&nbsp;%</span>
+    </div>
+
+    <!-- ONBOARDING -->
+    <sc-if value="{{ is.onboarding }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto">
+        <div style="background:var(--color-accent);color:var(--color-bg);padding:32px 20px">
+          <div style="font:800 34px var(--font-heading);letter-spacing:-0.02em;line-height:1.05">Fanch</div>
+          <div style="font:500 15px var(--font-body);margin-top:10px;line-height:1.4;text-wrap:pretty">L'assistant familial qui reste à la maison. Sans tracker, chez vous.</div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;border:2px solid var(--color-text)">
+            <div onClick="{{ onboard.setCreer }}" style="flex:1;padding:11px 12px;cursor:pointer;font:600 13px var(--font-body);text-transform:uppercase;letter-spacing:0.04em;background:{{ onboard.bgCreer }};color:{{ onboard.cCreer }}">Créer un foyer</div>
+            <div onClick="{{ onboard.setRejoindre }}" style="flex:1;padding:11px 12px;cursor:pointer;font:600 13px var(--font-body);text-transform:uppercase;letter-spacing:0.04em;border-left:2px solid var(--color-text);background:{{ onboard.bgRej }};color:{{ onboard.cRej }}">J'ai une invitation</div>
+          </div>
+          <sc-if value="{{ onboard.creer }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <label style="display:flex;flex-direction:column;gap:6px;font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.05em">Votre nom
+                <input class="input" placeholder="Camille" style="width:100%;box-sizing:border-box"></input>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px;font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.05em">Email
+                <input class="input" placeholder="camille@exemple.fr" style="width:100%;box-sizing:border-box"></input>
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px;font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.05em">Nom du foyer
+                <input class="input" placeholder="Foyer Kerbrat" style="width:100%;box-sizing:border-box"></input>
+              </label>
+            </div>
+          </sc-if>
+          <sc-if value="{{ onboard.rejoindre }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <label style="display:flex;flex-direction:column;gap:6px;font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.05em">Code d'invitation
+                <input class="input" placeholder="FANCH-7K2M" style="width:100%;box-sizing:border-box"></input>
+              </label>
+              <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);line-height:1.5">Vous rejoindrez le foyer avec votre propre compte : votre progression vous appartient, même dans deux foyers.</div>
+            </div>
+          </sc-if>
+          <button onClick="{{ nav.accueil }}" class="btn btn-primary btn-block">Continuer</button>
+          <div style="font:400 11px var(--font-body);color:var(--color-neutral-700);border-top:2px solid var(--color-divider);padding-top:12px">Aucun tracker · Données exportables · Auto-hébergeable</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ACCUEIL -->
+    <sc-if value="{{ is.accueil }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px">
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Foyer Kerbrat</div>
+          <div style="font:700 28px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">Bonsoir, Camille</div>
+        </div>
+        <div onClick="{{ nav.avoir }}" style="border:2px solid var(--color-text);padding:16px;cursor:pointer" style-hover="background:var(--color-accent-100)">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Ce soir</div>
+          <div style="font:700 18px var(--font-heading);margin-top:6px">3 épisodes à voir</div>
+          <div style="font:400 13px var(--font-body);color:var(--color-neutral-700);margin-top:4px">Dont Slow Horses avec le groupe — Papi n'a pas encore vu le S4 · E3.</div>
+        </div>
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Modules</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div onClick="{{ nav.avoir }}" style="background:var(--color-accent);color:var(--color-bg);padding:14px;cursor:pointer;min-height:96px;display:flex;flex-direction:column;justify-content:space-between" style-hover="background:var(--color-accent-600)">
+              <div style="font:700 16px var(--font-heading)">Séries</div>
+              <div style="font:500 12px var(--font-body)">4 suivies · 1 groupe</div>
+            </div>
+            <sc-for list="{{ modulesAVenir }}" as="m" hint-placeholder-count="5">
+              <div style="border:2px solid var(--color-neutral-300);color:var(--color-neutral-600);padding:14px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box">
+                <div style="font:700 16px var(--font-heading)">{{ m.n }}</div>
+                <div style="font:600 10px var(--font-body);text-transform:uppercase;letter-spacing:0.08em">Bientôt</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border-top:2px solid var(--color-divider);padding-top:14px">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Hier</div>
+          <div onClick="{{ nav.groupe }}" style="display:flex;gap:12px;align-items:baseline;cursor:pointer" style-hover="color:var(--color-accent-600)">
+            <span style="font:700 13px var(--font-body);color:var(--color-accent)">●</span>
+            <span style="font:400 14px var(--font-body);line-height:1.45">Séance de groupe — Slow Horses S4 · E2, avec Marie et Papi.</span>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- À VOIR -->
+    <sc-if value="{{ is.avoir }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Séries</div>
+          <div style="font:700 28px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">À voir</div>
+        </div>
+        <sc-for list="{{ avoir }}" as="e" hint-placeholder-count="3">
+          <div style="border-bottom:2px solid var(--color-divider);padding-bottom:14px;display:flex;gap:12px;align-items:center">
+            <div onClick="{{ e.go }}" style="width:52px;height:72px;flex:none;background:var(--color-text);color:var(--color-bg);display:flex;align-items:flex-end;padding:6px;box-sizing:border-box;font:800 22px var(--font-heading);cursor:pointer">{{ e.initiale }}</div>
+            <div onClick="{{ e.go }}" style="flex:1;cursor:pointer;min-width:0">
+              <div style="display:flex;gap:8px;align-items:center">
+                <div style="font:700 16px var(--font-heading)">{{ e.serie }}</div>
+                <sc-if value="{{ e.badge }}" hint-placeholder-val="{{ false }}"><span class="tag tag-accent">{{ e.badge }}</span></sc-if>
+              </div>
+              <div style="font:500 13px var(--font-body);margin-top:3px">{{ e.ep }}</div>
+              <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);margin-top:2px">{{ e.info }}</div>
+            </div>
+            <div onClick="{{ e.toggle }}" title="Marquer vu" style="width:24px;height:24px;flex:none;border:2px solid var(--color-text);display:flex;align-items:center;justify-content:center;cursor:pointer;background:{{ e.boxBg }};color:var(--color-bg);font:700 14px var(--font-body)" style-hover="border-color:var(--color-accent)">{{ e.mark }}</div>
+          </div>
+        </sc-for>
+        <div style="font:400 12px var(--font-body);color:var(--color-neutral-700)">Cocher ici écrit dans votre progression personnelle — jamais dans celle du groupe.</div>
+      </div>
+    </sc-if>
+
+    <!-- FICHE SÉRIE -->
+    <sc-if value="{{ is.serie }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div onClick="{{ nav.avoir }}" style="font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.05em;color:var(--color-accent-700);cursor:pointer">← À voir</div>
+          <div style="display:flex;gap:14px">
+            <div style="width:84px;height:118px;flex:none;background:var(--color-text);color:var(--color-bg);display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font:800 34px var(--font-heading)">S</div>
+            <div style="min-width:0">
+              <div style="font:700 24px var(--font-heading);letter-spacing:-0.02em;line-height:1.1">Severance</div>
+              <div style="font:400 13px var(--font-body);color:var(--color-neutral-700);margin-top:4px">Apple TV+ · En cours</div>
+              <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+                <span class="tag tag-neutral">Drame</span><span class="tag tag-neutral">SF</span>
+              </div>
+              <div style="font:600 13px var(--font-body);margin-top:10px;color:var(--color-accent-700)">{{ nbVus }} / 9 vus — saison 2</div>
+            </div>
+          </div>
+          <div style="border:2px solid var(--color-text);padding:12px;display:flex;flex-direction:column;gap:8px">
+            <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em">Visibilité de cette série</div>
+            <div style="display:flex;border:2px solid var(--color-text)">
+              <sc-for list="{{ visSerieOpts }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.set }}" style="flex:1;text-align:left;padding:8px 10px;cursor:pointer;font:600 12px var(--font-body);background:{{ o.bg }};color:{{ o.c }};border-left:{{ o.bl }}">{{ o.t }}</div>
+              </sc-for>
+            </div>
+            <div style="font:400 11px var(--font-body);color:var(--color-neutral-700)">Héritée = votre réglage global (« membres de mes foyers »).</div>
+          </div>
+        </div>
+        <div style="border-top:2px solid var(--color-divider);padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font:700 15px var(--font-heading)">Saison 2</div>
+          <button onClick="{{ toutVu }}" class="btn btn-secondary" style="padding:6px 12px;font-size:12px">Tout marquer vu</button>
+        </div>
+        <div style="padding:0 20px 20px">
+          <sc-for list="{{ eps }}" as="ep" hint-placeholder-count="9">
+            <div style="display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--color-neutral-300)">
+              <div style="font:700 13px var(--font-body);color:var(--color-accent);width:28px;flex:none">{{ ep.num }}</div>
+              <div style="flex:1;font:500 14px var(--font-body)">{{ ep.titre }}</div>
+              <div onClick="{{ ep.toggle }}" style="width:24px;height:24px;flex:none;border:2px solid var(--color-text);display:flex;align-items:center;justify-content:center;cursor:pointer;background:{{ ep.boxBg }};color:var(--color-bg);font:700 14px var(--font-body)" style-hover="border-color:var(--color-accent)">{{ ep.mark }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- GROUPE -->
+    <sc-if value="{{ is.groupe }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+        <div style="padding:20px 20px 0">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Groupe · Slow Horses</div>
+          <div style="font:700 26px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">Les mardis série</div>
+        </div>
+        <div style="background:var(--color-accent);color:var(--color-bg);padding:16px 20px;margin-top:14px">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em">Point commun — on en est où ?</div>
+          <div style="font:800 26px var(--font-heading);margin-top:4px">{{ pointCommun }}</div>
+          <div style="font:500 12px var(--font-body);margin-top:4px">{{ pcNote }}</div>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em">Membres</div>
+          <sc-for list="{{ membres }}" as="m" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+              <div style="flex:1;font:500 14px var(--font-body)">{{ m.n }}</div>
+              <div style="font:600 13px var(--font-body);color:var(--color-neutral-800)">{{ m.pos }}</div>
+              <span class="{{ m.tagClass }}">{{ m.statut }}</span>
+            </div>
+          </sc-for>
+          <div style="font:400 11px var(--font-body);color:var(--color-neutral-700)">Jules est en pause : il ne bloque pas le point commun.</div>
+        </div>
+        <div style="border-top:2px solid var(--color-divider);padding:16px 20px;display:flex;flex-direction:column">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Saison 4</div>
+          <sc-for list="{{ geps }}" as="g" hint-placeholder-count="6">
+            <div style="display:flex;gap:12px;align-items:center;padding:10px 12px;margin:0 -12px;background:{{ g.bg }};border-bottom:1px solid var(--color-neutral-300)">
+              <div style="font:700 12px var(--font-body);color:{{ g.numC }};width:58px;flex:none">{{ g.num }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font:500 14px var(--font-body);color:{{ g.titreC }}">{{ g.titre }}</div>
+                <div style="font:400 11px var(--font-body);color:var(--color-neutral-700);margin-top:1px">{{ g.sub }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:16px 20px 24px">
+          <button onClick="{{ nav.seance }}" class="btn btn-primary btn-block">Enregistrer une séance</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SÉANCE -->
+    <sc-if value="{{ is.seance }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div onClick="{{ nav.groupe }}" style="font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.05em;color:var(--color-accent-700);cursor:pointer">← Groupe</div>
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Nouvelle séance</div>
+          <div style="font:700 26px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">Slow Horses</div>
+        </div>
+        <div style="border:2px solid var(--color-text);padding:14px">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em">Épisode</div>
+          <div style="font:700 18px var(--font-heading);margin-top:4px">S4 · E3 — Négociations</div>
+          <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);margin-top:2px">Ce soir · mardi 28 juillet</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Qui est présent ?</div>
+          <sc-for list="{{ participants }}" as="p" hint-placeholder-count="4">
+            <div onClick="{{ p.toggle }}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--color-neutral-300);cursor:pointer">
+              <div style="width:24px;height:24px;flex:none;border:2px solid var(--color-text);display:flex;align-items:center;justify-content:center;background:{{ p.boxBg }};color:var(--color-bg);font:700 14px var(--font-body)">{{ p.mark }}</div>
+              <div style="flex:1;font:500 14px var(--font-body)">{{ p.n }}</div>
+              <div style="font:400 12px var(--font-body);color:var(--color-neutral-700)">{{ p.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);line-height:1.5">Seuls les présents seront marqués comme ayant vu l'épisode — jamais de coche par procuration.</div>
+        <sc-if value="{{ papiAbsent }}" hint-placeholder-val="{{ true }}">
+          <div style="border-left:4px solid var(--color-accent);background:var(--color-accent-100);padding:12px 14px;font:500 13px var(--font-body);line-height:1.45">Papi est absent : le point commun restera au S4 · E2 et il restera protégé des spoilers jusqu'à ce qu'il rattrape.</div>
+        </sc-if>
+        <button onClick="{{ saveSeance }}" class="btn btn-primary btn-block">Enregistrer la séance ({{ nbPresents }})</button>
+      </div>
+    </sc-if>
+
+    <!-- RECHERCHE -->
+    <sc-if value="{{ is.recherche }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Catalogue</div>
+          <div style="font:700 28px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">Recherche</div>
+        </div>
+        <input class="input" defaultValue="sh" placeholder="Titre d'une série…" style="width:100%;box-sizing:border-box"></input>
+        <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-neutral-700)">Résultats pour « sh »</div>
+        <sc-for list="{{ resultats }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:center;border-bottom:2px solid var(--color-divider);padding-bottom:14px">
+            <div style="width:46px;height:64px;flex:none;background:var(--color-text);color:var(--color-bg);display:flex;align-items:flex-end;padding:5px;box-sizing:border-box;font:800 20px var(--font-heading)">{{ r.initiale }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 15px var(--font-heading)">{{ r.n }}</div>
+              <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);margin-top:2px">{{ r.info }}</div>
+            </div>
+            <button onClick="{{ r.toggle }}" class="{{ r.btnClass }}" style="padding:7px 12px;font-size:12px">{{ r.btnLabel }}</button>
+          </div>
+        </sc-for>
+        <div style="font:400 11px var(--font-body);color:var(--color-neutral-700)">Source : TVmaze — aucune clé d'API requise. TMDB en option pour les visuels et le français.</div>
+      </div>
+    </sc-if>
+
+    <!-- CALENDRIER -->
+    <sc-if value="{{ is.calendrier }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px">
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Diffusions</div>
+          <div style="font:700 28px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">À venir</div>
+        </div>
+        <sc-for list="{{ agenda }}" as="j" hint-placeholder-count="3">
+          <div>
+            <div style="font:600 12px var(--font-body);text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid var(--color-divider);padding-bottom:6px;margin-bottom:10px">{{ j.jour }}</div>
+            <sc-for list="{{ j.items }}" as="it" hint-placeholder-count="1">
+              <div style="display:flex;gap:12px;align-items:baseline;padding:4px 0">
+                <div style="font:800 15px var(--font-heading);color:var(--color-accent);flex:none;width:64px">{{ it.e }}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font:600 14px var(--font-body)">{{ it.s }}</div>
+                  <div style="font:400 12px var(--font-body);color:var(--color-neutral-700)">{{ it.plat }}</div>
+                  <sc-if value="{{ it.note }}" hint-placeholder-val="{{ false }}">
+                    <div style="font:500 11px var(--font-body);color:var(--color-accent-700);margin-top:2px">{{ it.note }}</div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- WATCHLIST -->
+    <sc-if value="{{ is.watchlist }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">À commencer</div>
+          <div style="font:700 28px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">Watchlist</div>
+        </div>
+        <sc-for list="{{ watchlist }}" as="w" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:center;border-bottom:2px solid var(--color-divider);padding-bottom:14px">
+            <div style="width:46px;height:64px;flex:none;background:var(--color-text);color:var(--color-bg);display:flex;align-items:flex-end;padding:5px;box-sizing:border-box;font:800 20px var(--font-heading)">{{ w.initiale }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 15px var(--font-heading)">{{ w.n }}</div>
+              <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);margin-top:2px">{{ w.info }}</div>
+            </div>
+            <button onClick="{{ nav.serie }}" class="btn btn-secondary" style="padding:7px 12px;font-size:12px">Commencer</button>
+          </div>
+        </sc-for>
+        <button class="btn btn-ghost btn-block">Importer depuis TV Time / Trakt / CSV</button>
+        <div style="font:400 11px var(--font-body);color:var(--color-neutral-700)">Personne ne resaisira deux cents séries à la main.</div>
+      </div>
+    </sc-if>
+
+    <!-- RÉGLAGES -->
+    <sc-if value="{{ is.reglages }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;color:var(--color-accent)">Vie privée</div>
+          <div style="font:700 28px var(--font-heading);letter-spacing:-0.02em;margin-top:4px">Visibilité</div>
+        </div>
+        <div style="font:400 13px var(--font-body);color:var(--color-neutral-800);line-height:1.5">Votre progression est privée par défaut. Ce réglage s'applique à toutes vos séries, avec exception possible série par série.</div>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{ visOpts }}" as="v" hint-placeholder-count="3">
+            <div onClick="{{ v.set }}" style="display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--color-neutral-300);cursor:pointer;align-items:flex-start">
+              <div style="width:20px;height:20px;flex:none;border:2px solid var(--color-text);display:flex;align-items:center;justify-content:center;margin-top:1px">
+                <div style="width:10px;height:10px;background:{{ v.dot }}"></div>
+              </div>
+              <div>
+                <div style="font:600 14px var(--font-body)">{{ v.t }}</div>
+                <div style="font:400 12px var(--font-body);color:var(--color-neutral-700);margin-top:2px">{{ v.d }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font:600 11px var(--font-body);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Exceptions par série</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--color-neutral-300)">
+            <span style="font:500 14px var(--font-body)">Lupin</span><span class="tag tag-outline">Privée</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--color-neutral-300)">
+            <span style="font:500 14px var(--font-body)">Slow Horses</span><span class="tag tag-accent">Groupe</span>
+          </div>
+        </div>
+        <div style="border-left:4px solid var(--color-accent);background:var(--color-accent-100);padding:12px 14px;font:500 12px var(--font-body);line-height:1.5">Rejoindre un groupe expose votre position sur cette série — c'est ce qui permet le point commun. Dates, rewatchs et notes restent masqués.</div>
+        <button class="btn btn-ghost btn-block">Exporter toutes mes données</button>
+        <div style="font:400 11px var(--font-body);color:var(--color-neutral-700);border-top:2px solid var(--color-divider);padding-top:12px">Aucun tracker · Hébergement UE · Suppression effective</div>
+      </div>
+    </sc-if>
+
+    <!-- TAB BAR -->
+    <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:none;border-top:2px solid var(--color-text);display:flex;background:var(--color-bg)">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+          <div onClick="{{ t.go }}" style="flex:1;padding:14px 4px 18px;text-align:center;cursor:pointer;font:700 11px var(--font-body);text-transform:uppercase;letter-spacing:0.03em;color:{{ t.c }};border-top:{{ t.bt }};margin-top:-2px" style-hover="color:var(--color-accent-600)">{{ t.label }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:16px;right:16px;bottom:76px;background:var(--color-text);color:var(--color-bg);padding:13px 16px;font:600 13px var(--font-body);box-shadow:var(--shadow-md)">{{ toast }}</div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;ecranInitial&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;accueil&quot;, &quot;options&quot;: [&quot;onboarding&quot;,&quot;accueil&quot;,&quot;avoir&quot;,&quot;serie&quot;,&quot;groupe&quot;,&quot;seance&quot;,&quot;recherche&quot;,&quot;calendrier&quot;,&quot;watchlist&quot;,&quot;reglages&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Prototype&quot; },
+  &quot;masquageSpoilers&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Groupe&quot; },
+  &quot;papiARattrape&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Groupe&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    screen: null,
+    vusS2: [true, true, true, true, true, true, false, false, false],
+    avu: {},
+    visGlobal: 'foyers',
+    visSerie: 'heritee',
+    part: { moi: true, marie: true, papi: false, jules: false },
+    added: {},
+    onboardMode: 'creer',
+    toast: null
+  };
+  go(s) { this.setState({ screen: s }); }
+  renderVals() {
+    const st = this.state, p = this.props;
+    const screen = st.screen ?? p.ecranInitial ?? 'accueil';
+    const masq = p.masquageSpoilers ?? true;
+    const rattrape = p.papiARattrape ?? false;
+    const keys = ['onboarding','accueil','avoir','serie','groupe','seance','recherche','calendrier','watchlist','reglages'];
+    const labels = { onboarding:'Onboarding', accueil:'Accueil Fanch', avoir:'À voir', serie:'Fiche série', groupe:'Groupe', seance:'Séance', recherche:'Recherche', calendrier:'Calendrier', watchlist:'Watchlist', reglages:'Visibilité' };
+    const nav = {}; keys.forEach(k => nav[k] = () => this.go(k));
+    const sidebar = keys.map(k => ({
+      label: labels[k], go: nav[k],
+      color: k === screen ? 'var(--color-accent)' : 'var(--color-text)',
+      border: k === screen ? '3px solid var(--color-accent)' : '3px solid transparent'
+    }));
+    const is = {}; keys.forEach(k => is[k] = k === screen);
+    const box = vu => ({ boxBg: vu ? 'var(--color-text)' : 'transparent', mark: vu ? '✓' : '' });
+    const avoirData = [
+      { id:'sev', serie:'Severance', ep:'S2 · E7 — Chikhai Bardo', info:'Apple TV+ · 58 min', badge:null, go:nav.serie },
+      { id:'sh', serie:'Slow Horses', ep:'S4 · E3 — Négociations', info:'Apple TV+ · 47 min', badge:'Groupe', go:nav.groupe },
+      { id:'dpc', serie:'Dix pour cent', ep:'S3 · E1 — Gérard', info:'Netflix · 52 min', badge:null, go:nav.serie }
+    ];
+    const avoir = avoirData.map(e => ({ ...e, initiale:e.serie[0], ...box(!!st.avu[e.id]),
+      toggle:()=>this.setState(s=>({ avu:{ ...s.avu, [e.id]: !s.avu[e.id] } })) }));
+    const titresS2 = ['Hello, Ms. Cobel','Goodbye, Mrs. Selvig','Who Is Alive?','Woe\'s Hollow','Trojan\'s Horse','Attila','Chikhai Bardo','Sweet Vitriol','The After Hours'];
+    const eps = titresS2.map((t,i) => ({ num:'E'+(i+1), titre:t, ...box(st.vusS2[i]),
+      toggle:()=>this.setState(s=>{ const v=[...s.vusS2]; v[i]=!v[i]; return { vusS2:v }; }) }));
+    const nbVus = st.vusS2.filter(Boolean).length;
+    const toutVu = () => this.setState({ vusS2: titresS2.map(()=>true) });
+    const pcNum = rattrape ? 3 : 2;
+    const gtitres = ['Identity Theft','Un inconnu en ville','Négociations','Les règles du jeu','Trahison','Fin de partie'];
+    const geps = gtitres.map((t,i) => {
+      const n = i+1, masked = masq && n > pcNum;
+      return {
+        num:'S4 · E'+n,
+        titre: masked ? 'Épisode masqué' : t,
+        sub: masked ? 'Protégé — au-delà du point commun' : (n <= pcNum ? 'Vu par tous' : 'Vu par Marie — pas encore par tous'),
+        bg: masked ? 'var(--color-neutral-200)' : 'transparent',
+        numC: masked ? 'var(--color-neutral-500)' : 'var(--color-accent)',
+        titreC: masked ? 'var(--color-neutral-600)' : 'var(--color-text)'
+      };
+    });
+    const membres = [
+      { n:'Camille (moi)', pos:'S4 · E3', statut:'actif', tagClass:'tag tag-accent' },
+      { n:'Marie', pos:'S4 · E4', statut:'actif', tagClass:'tag tag-accent' },
+      { n:'Papi', pos: rattrape ? 'S4 · E3' : 'S4 · E2', statut:'actif', tagClass:'tag tag-accent' },
+      { n:'Jules', pos:'S4 · E1', statut:'en pause', tagClass:'tag tag-outline' }
+    ];
+    const partDefs = [
+      { key:'moi', n:'Camille (moi)', note:'S4 · E3 → vu' },
+      { key:'marie', n:'Marie', note:'déjà vu → rewatch +1' },
+      { key:'papi', n:'Papi', note:'absent = protégé' },
+      { key:'jules', n:'Jules', note:'en pause' }
+    ];
+    const participants = partDefs.map(d => ({ ...d, ...box(st.part[d.key]),
+      toggle:()=>this.setState(s=>({ part:{ ...s.part, [d.key]: !s.part[d.key] } })) }));
+    const nbPresents = Object.values(st.part).filter(Boolean).length;
+    const saveSeance = () => {
+      const n = Object.values(this.state.part).filter(Boolean).length;
+      this.setState({ screen:'groupe', toast:'Séance enregistrée — ' + n + ' progression' + (n>1?'s':'') + ' mise' + (n>1?'s':'') + ' à jour' });
+      clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast:null }), 3500);
+    };
+    const resDefs = [
+      { id:'shet', n:'Shetland', info:'BBC One · 2013 · 9 saisons' },
+      { id:'shri', n:'Shrinking', info:'Apple TV+ · 2023 · 2 saisons' },
+      { id:'sher', n:'Sherlock', info:'BBC One · 2010 · 4 saisons' }
+    ];
+    const resultats = resDefs.map(r => {
+      const on = !!st.added[r.id];
+      return { ...r, initiale:r.n[0],
+        btnLabel: on ? '✓ Watchlist' : '+ Ajouter',
+        btnClass: on ? 'btn btn-secondary' : 'btn btn-primary',
+        toggle:()=>this.setState(s=>({ added:{ ...s.added, [r.id]: !s.added[r.id] } })) };
+    });
+    const watchlist = [
+      { n:'Dark', info:'Netflix · 3 saisons' },
+      { n:'Better Call Saul', info:'AMC · 6 saisons' },
+      { n:'Station Eleven', info:'HBO Max · mini-série' }
+    ].map(w => ({ ...w, initiale:w.n[0] }));
+    const agenda = [
+      { jour:'Mercredi 30 juillet', items:[{ e:'S2·E8', s:'Severance', plat:'Apple TV+', note:null }] },
+      { jour:'Jeudi 31 juillet', items:[{ e:'S4·E7', s:'Slow Horses', plat:'Apple TV+', note:'Notification retenue — anti-spoiler du groupe' }] },
+      { jour:'Lundi 4 août', items:[{ e:'P4·E1', s:'Lupin', plat:'Netflix', note:null }, { e:'S3·E2', s:'Dix pour cent', plat:'Netflix', note:null }] }
+    ];
+    const visDefs = [
+      { v:'privee', t:'Privée', d:'Personne ne voit votre progression' },
+      { v:'foyers', t:'Membres de mes foyers', d:'Pratique par défaut, révocable série par série' },
+      { v:'groupes', t:'Membres de mes groupes', d:'Limité aux séries suivies ensemble' }
+    ];
+    const visOpts = visDefs.map(o => ({ ...o,
+      dot: st.visGlobal === o.v ? 'var(--color-accent)' : 'transparent',
+      set:()=>this.setState({ visGlobal:o.v }) }));
+    const visSerieDefs = [ { v:'heritee', t:'Héritée' }, { v:'privee', t:'Privée' }, { v:'visible', t:'Visible' } ];
+    const visSerieOpts = visSerieDefs.map((o,i) => ({ ...o,
+      bg: st.visSerie === o.v ? 'var(--color-text)' : 'transparent',
+      c: st.visSerie === o.v ? 'var(--color-bg)' : 'var(--color-text)',
+      bl: i === 0 ? 'none' : '2px solid var(--color-text)',
+      set:()=>this.setState({ visSerie:o.v }) }));
+    const onboard = {
+      creer: st.onboardMode === 'creer',
+      rejoindre: st.onboardMode === 'rejoindre',
+      setCreer:()=>this.setState({ onboardMode:'creer' }),
+      setRejoindre:()=>this.setState({ onboardMode:'rejoindre' }),
+      bgCreer: st.onboardMode==='creer' ? 'var(--color-text)' : 'transparent',
+      cCreer: st.onboardMode==='creer' ? 'var(--color-bg)' : 'var(--color-text)',
+      bgRej: st.onboardMode==='rejoindre' ? 'var(--color-text)' : 'transparent',
+      cRej: st.onboardMode==='rejoindre' ? 'var(--color-bg)' : 'var(--color-text)'
+    };
+    const tabDefs = [
+      { k:'accueil', label:'Accueil' }, { k:'avoir', label:'À voir' }, { k:'calendrier', label:'Agenda' },
+      { k:'recherche', label:'Recherche' }, { k:'reglages', label:'Réglages' }
+    ];
+    const tabActive = { serie:'avoir', groupe:'avoir', seance:'avoir', watchlist:'recherche' }[screen] || screen;
+    const tabs = tabDefs.map(t => ({ ...t, go:nav[t.k],
+      c: t.k === tabActive ? 'var(--color-accent)' : 'var(--color-neutral-700)',
+      bt: t.k === tabActive ? '2px solid var(--color-accent)' : '2px solid transparent' }));
+    return {
+      sidebar, is, nav, tabs, showTabs: screen !== 'onboarding', toast: st.toast,
+      avoir, eps, nbVus, toutVu,
+      pointCommun: 'S4 · E' + pcNum, pcNote: rattrape ? 'Papi a rattrapé — le groupe peut avancer.' : 'Papi n\'a pas encore vu le E3 — tout le monde attend.',
+      geps, membres, participants, nbPresents, papiAbsent: !st.part.papi, saveSeance,
+      resultats, watchlist, agenda, visOpts, visSerieOpts, onboard,
+      modulesAVenir: [{ n:'Cuisine' }, { n:'Budget' }, { n:'Planning' }, { n:'Vacances' }, { n:'Médiathèque' }]
+    };
+  }
+}
+</script>
+</body>
+</html>
