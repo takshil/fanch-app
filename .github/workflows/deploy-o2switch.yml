@@ -1,0 +1,182 @@
+name: Déploiement o2switch
+
+# Déploie l'API Laravel (api/) et la SPA Vue (app/) sur un hébergement
+# mutualisé o2switch (cPanel / Apache) via SSH + rsync.
+#
+# Déclenchement : à chaque push sur `main`, ou manuellement depuis l'onglet
+# Actions ("Run workflow").
+#
+# Configuration requise (Settings → Secrets and variables → Actions) :
+#
+#   Secrets :
+#     O2SWITCH_SSH_HOST        Hôte SSH (ex: nom-serveur.o2switch.net)
+#     O2SWITCH_SSH_USER        Utilisateur cPanel (ex: moncompte)
+#     O2SWITCH_SSH_KEY         Clé privée SSH (contenu complet, format OpenSSH)
+#
+#   Variables :
+#     O2SWITCH_SSH_PORT        Port SSH (défaut: 22)
+#     O2SWITCH_API_PATH        Chemin de déploiement de l'API
+#                              (ex: /home/moncompte/fanch-api)
+#     O2SWITCH_APP_PATH        Web root de la SPA
+#                              (ex: /home/moncompte/public_html
+#                               ou /home/moncompte/app.mondomaine.fr)
+#     O2SWITCH_PHP_BIN         Binaire PHP CLI 8.3 (défaut: php)
+#     VITE_API_URL             URL publique de l'API consommée par la SPA
+#                              (ex: https://api.mondomaine.fr/api)
+#     O2SWITCH_KEEP_RELEASES   Nombre de releases à conserver (défaut: 5)
+#
+# Voir deploy/o2switch/README.md pour la mise en place complète côté serveur.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Empêche deux déploiements simultanés (bascule de symlink non concurrente).
+concurrency:
+  group: deploy-o2switch
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & déploiement
+    runs-on: ubuntu-latest
+    environment: production
+
+    env:
+      PHP_BIN: ${{ vars.O2SWITCH_PHP_BIN || 'php' }}
+      API_PATH: ${{ vars.O2SWITCH_API_PATH }}
+      APP_PATH: ${{ vars.O2SWITCH_APP_PATH }}
+      SSH_HOST: ${{ secrets.O2SWITCH_SSH_HOST }}
+      SSH_USER: ${{ secrets.O2SWITCH_SSH_USER }}
+      SSH_PORT: ${{ vars.O2SWITCH_SSH_PORT || '22' }}
+      KEEP_RELEASES: ${{ vars.O2SWITCH_KEEP_RELEASES || '5' }}
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------
+      # Garde-fou : vérifie que la configuration minimale est présente.
+      # ----------------------------------------------------------------
+      - name: Vérification de la configuration
+        run: |
+          missing=0
+          for v in SSH_HOST SSH_USER API_PATH APP_PATH; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Variable/secret manquant : $v"
+              missing=1
+            fi
+          done
+          if [ -z "${{ secrets.O2SWITCH_SSH_KEY }}" ]; then
+            echo "::error::Secret manquant : O2SWITCH_SSH_KEY"
+            missing=1
+          fi
+          [ "$missing" = "0" ] || { echo "Voir deploy/o2switch/README.md"; exit 1; }
+
+      # ----------------------------------------------------------------
+      # Build de l'API Laravel (PHP 8.3)
+      # ----------------------------------------------------------------
+      - name: Configuration de PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, ctype, curl, dom, fileinfo, filter, hash, json, openssl, pcre, pdo, session, tokenizer, xml
+          tools: composer:v2
+          coverage: none
+
+      - name: Fichier .env de build (temporaire, non déployé)
+        working-directory: api
+        run: cp .env.example .env
+
+      - name: Installation des dépendances Composer (production)
+        working-directory: api
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Configuration de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            app/package-lock.json
+
+      - name: Build des assets de l'API (Laravel Vite)
+        working-directory: api
+        run: |
+          npm ci
+          npm run build
+
+      # ----------------------------------------------------------------
+      # Build de la SPA Vue
+      # ----------------------------------------------------------------
+      - name: Build de la SPA Vue
+        working-directory: app
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      # ----------------------------------------------------------------
+      # Préparation de la connexion SSH
+      # ----------------------------------------------------------------
+      - name: Configuration de la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.O2SWITCH_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          echo "SSH_OPTS=-i $HOME/.ssh/deploy_key -p $SSH_PORT -o BatchMode=yes" >> "$GITHUB_ENV"
+
+      # ----------------------------------------------------------------
+      # Déploiement de l'API : rsync du code vers une nouvelle release,
+      # puis exécution du script distant (migrations, caches, bascule).
+      # ----------------------------------------------------------------
+      - name: Déploiement de l'API (rsync + release)
+        run: |
+          RELEASE="$(date -u +%Y%m%d%H%M%S)"
+          echo "RELEASE=$RELEASE" >> "$GITHUB_ENV"
+          RELEASE_DIR="$API_PATH/releases/$RELEASE"
+
+          ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "mkdir -p '$RELEASE_DIR'"
+
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'tests' \
+            --exclude '.env' \
+            --exclude 'storage/logs/*' \
+            -e "ssh $SSH_OPTS" \
+            api/ "$SSH_USER@$SSH_HOST:$RELEASE_DIR/"
+
+          # Envoi + exécution du script de déploiement distant.
+          scp $SSH_OPTS deploy/o2switch/deploy-remote.sh \
+            "$SSH_USER@$SSH_HOST:$RELEASE_DIR/deploy-remote.sh"
+
+          ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" \
+            "API_PATH='$API_PATH' RELEASE='$RELEASE' PHP_BIN='$PHP_BIN' KEEP_RELEASES='$KEEP_RELEASES' bash '$RELEASE_DIR/deploy-remote.sh'"
+
+      # ----------------------------------------------------------------
+      # Déploiement de la SPA : rsync du build statique vers le web root.
+      # ----------------------------------------------------------------
+      - name: Déploiement de la SPA (rsync)
+        run: |
+          ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "mkdir -p '$APP_PATH'"
+          rsync -az --delete \
+            -e "ssh $SSH_OPTS" \
+            app/dist/ "$SSH_USER@$SSH_HOST:$APP_PATH/"
+
+      - name: Nettoyage de la clé SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+      - name: Récapitulatif
+        run: |
+          echo "### Déploiement o2switch terminé :rocket:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Release API** : \`$RELEASE\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **API** : \`$API_PATH/current/public\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **SPA** : \`$APP_PATH\`" >> "$GITHUB_STEP_SUMMARY"

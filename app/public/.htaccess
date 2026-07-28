@@ -1,0 +1,25 @@
+# SPA Vue (vue-router en mode history) sur o2switch / Apache.
+# Toute requête qui ne correspond pas à un fichier ou dossier existant est
+# renvoyée vers index.html afin que le routeur côté client prenne le relais.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Ne pas réécrire les fichiers et dossiers réellement présents.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Tout le reste -> index.html (routes gérées par vue-router).
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Cache long pour les assets fingerprintés générés par Vite.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(?:js|css|woff2?|ttf|eot|svg|png|jpe?g|gif|webp|avif|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
