@@ -41,7 +41,7 @@ jobs:
   deploy:
     name: Build & déploiement
     runs-on: ubuntu-latest
-    environment: production
+    environment: recette
 
     env:
       PHP_BIN: ${{ vars.O2SWITCH_PHP_BIN || 'php' }}
