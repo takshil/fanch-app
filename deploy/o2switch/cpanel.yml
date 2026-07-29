@@ -1,14 +1,15 @@
 ---
-# Recette de déploiement exécutée par o2switch (cPanel → Git Version Control)
-# lors du « Deploy HEAD Commit » de la branche `o2switch-deploy`.
+# Recette de déploiement exécutée par o2switch (cPanel -> Git Version Control)
+# lors du "Deploy HEAD Commit" de la branche `o2switch-deploy`.
 #
 # Ce fichier est publié à la racine de la branche `o2switch-deploy` par le
-# workflow .github/workflows/o2switch-deploy.yml. Le dépôt cloné par cPanel
-# contient déjà tout le nécessaire (vendor + assets buildés) : le serveur ne
+# workflow .github/workflows/o2switch-deploy.yml. Le depot clone par cPanel
+# contient deja tout le necessaire (vendor + assets buildes) : le serveur ne
 # compile rien, il ne fait que copier les fichiers et lancer artisan.
 #
 # >>> PERSONNALISEZ les 3 variables ci-dessous (chemins ABSOLUS dans votre
 #     dossier personnel o2switch). $HOME = /home/<votre-compte>.
+#     ATTENTION : utilisez $HOME et NON ~ (le ~ entre guillemets ne s'etend pas).
 #
 #   API_PATH : dossier de l'API. Le docroot du sous-domaine api.<domaine>
 #              doit pointer sur $API_PATH/app/public
@@ -17,31 +18,17 @@
 
 deployment:
   tasks:
-    - export API_PATH="~/api.tyfanch.bzh"
-    - export APP_PATH="~/app.tyfanch.bzh"
-    - export PHP="/opt/cpanel/ea-php84/root/usr/bin/php"
-
-    # --- Déploiement du code de l'API (hors .env et storage partagés) ------
-    - /bin/mkdir -p "$API_PATH/shared" "$API_PATH/app"
-    - /usr/bin/rsync -a --delete --exclude '.env' --exclude 'storage' api/ "$API_PATH/app/"
-
-    # --- .env partagé (persistant, hors dépôt) -----------------------------
-    - >
-      if [ ! -f "$API_PATH/shared/.env" ]; then
-        /bin/cp "$API_PATH/app/.env.o2switch.example" "$API_PATH/shared/.env";
-        echo "ATTENTION : $API_PATH/shared/.env créé depuis le modèle. Éditez-le (MySQL, APP_KEY, APP_URL) puis redéployez.";
-      fi
-    - /bin/ln -sfn "$API_PATH/shared/.env" "$API_PATH/app/.env"
-
-    # --- storage partagé (logs, cache, sessions, fichiers) -----------------
-    - if [ ! -d "$API_PATH/shared/storage" ]; then /bin/cp -a api/storage "$API_PATH/shared/storage"; fi
-    - /bin/ln -sfn "$API_PATH/shared/storage" "$API_PATH/app/storage"
-
-    # --- Commandes Laravel -------------------------------------------------
-    - cd "$API_PATH/app" && $PHP artisan storage:link --force || true
-    - cd "$API_PATH/app" && $PHP artisan migrate --force
-    - cd "$API_PATH/app" && $PHP artisan config:cache && $PHP artisan route:cache && $PHP artisan view:cache
-
-    # --- Déploiement de la SPA (build statique) ----------------------------
-    - /bin/mkdir -p "$APP_PATH"
-    - /usr/bin/rsync -a --delete app/ "$APP_PATH/"
+    - 'export API_PATH="$HOME/api.tyfanch.bzh"'
+    - 'export APP_PATH="$HOME/app.tyfanch.bzh"'
+    - 'export PHP="/opt/cpanel/ea-php84/root/usr/bin/php"'
+    - '/bin/mkdir -p "$API_PATH/shared" "$API_PATH/app"'
+    - '/usr/bin/rsync -a --delete --exclude ".env" --exclude "storage" api/ "$API_PATH/app/"'
+    - 'test -f "$API_PATH/shared/.env" || /bin/cp "$API_PATH/app/.env.o2switch.example" "$API_PATH/shared/.env"'
+    - '/bin/ln -sfn "$API_PATH/shared/.env" "$API_PATH/app/.env"'
+    - 'test -d "$API_PATH/shared/storage" || /bin/cp -a api/storage "$API_PATH/shared/storage"'
+    - '/bin/ln -sfn "$API_PATH/shared/storage" "$API_PATH/app/storage"'
+    - 'cd "$API_PATH/app" && $PHP artisan storage:link --force || true'
+    - 'cd "$API_PATH/app" && $PHP artisan migrate --force'
+    - 'cd "$API_PATH/app" && $PHP artisan config:cache && $PHP artisan route:cache && $PHP artisan view:cache'
+    - '/bin/mkdir -p "$APP_PATH"'
+    - '/usr/bin/rsync -a --delete app/ "$APP_PATH/"'
