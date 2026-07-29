@@ -17,8 +17,8 @@
 
 deployment:
   tasks:
-    - export API_PATH="$HOME/api.tyfanch.bzh"
-    - export APP_PATH="$HOME/app.tyfanch.bzh"
+    - export API_PATH="~/api.tyfanch.bzh"
+    - export APP_PATH="~/app.tyfanch.bzh"
     - export PHP="/opt/cpanel/ea-php84/root/usr/bin/php"
 
     # --- Déploiement du code de l'API (hors .env et storage partagés) ------
