@@ -20,7 +20,7 @@ name: Déploiement o2switch
 #     O2SWITCH_APP_PATH        Web root de la SPA
 #                              (ex: /home/moncompte/public_html
 #                               ou /home/moncompte/app.mondomaine.fr)
-#     O2SWITCH_PHP_BIN         Binaire PHP CLI 8.3 (défaut: php)
+#     O2SWITCH_PHP_BIN         Binaire PHP CLI 8.4 (défaut: php)
 #     VITE_API_URL             URL publique de l'API consommée par la SPA
 #                              (ex: https://api.mondomaine.fr/api)
 #     O2SWITCH_KEEP_RELEASES   Nombre de releases à conserver (défaut: 5)
@@ -75,12 +75,12 @@ jobs:
           [ "$missing" = "0" ] || { echo "Voir deploy/o2switch/README.md"; exit 1; }
 
       # ----------------------------------------------------------------
-      # Build de l'API Laravel (PHP 8.3)
+      # Build de l'API Laravel (PHP 8.4)
       # ----------------------------------------------------------------
-      - name: Configuration de PHP 8.3
+      - name: Configuration de PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, bcmath, ctype, curl, dom, fileinfo, filter, hash, json, openssl, pcre, pdo, session, tokenizer, xml
           tools: composer:v2
           coverage: none
