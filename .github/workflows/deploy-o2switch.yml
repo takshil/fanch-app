@@ -128,8 +128,23 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "${{ secrets.O2SWITCH_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          echo "SSH_OPTS=-i $HOME/.ssh/deploy_key -p $SSH_PORT -o BatchMode=yes" >> "$GITHUB_ENV"
+          # Récupération de la clé d'hôte, NON bloquante : si le serveur ne
+          # répond pas à ssh-keyscan, on n'échoue pas ici (l'option
+          # StrictHostKeyChecking=accept-new ajoutera la clé à la première
+          # connexion réelle, où l'erreur serait bien plus explicite).
+          if ! ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "::warning::ssh-keyscan n'a pas pu récupérer la clé d'hôte de $SSH_HOST:$SSH_PORT — bascule sur accept-new."
+          fi
+          echo "SSH_OPTS=-i $HOME/.ssh/deploy_key -p $SSH_PORT -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" >> "$GITHUB_ENV"
+
+      - name: Test de connexion SSH
+        run: |
+          echo "Test de connexion à $SSH_USER@$SSH_HOST:$SSH_PORT ..."
+          if ! ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" 'echo "Connexion SSH établie sur $(hostname)"'; then
+            echo "::error::Impossible de se connecter en SSH à $SSH_HOST:$SSH_PORT avec l'utilisateur $SSH_USER."
+            echo "::error::Vérifiez : (1) O2SWITCH_SSH_HOST/USER/PORT, (2) que la clé publique associée à O2SWITCH_SSH_KEY est autorisée dans cPanel, (3) que l'accès SSH est activé et que le port est le bon."
+            exit 1
+          fi
 
       # ----------------------------------------------------------------
       # Déploiement de l'API : rsync du code vers une nouvelle release,
