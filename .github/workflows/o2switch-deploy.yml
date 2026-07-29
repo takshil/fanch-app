@@ -117,6 +117,11 @@ jobs:
           # versionnés (le serveur ne compile rien).
           rm -f deploy_tree/api/.gitignore
 
+          # On retire aussi .gitattributes : ses règles de normalisation EOL
+          # (`* text=auto eol=lf`) font apparaître des « uncommitted changes »
+          # au checkout côté cPanel, ce qui bloque le déploiement.
+          find deploy_tree -name '.gitattributes' -delete
+
       # ----------------------------------------------------------------
       # Publication sur la branche `o2switch-deploy` (historique à commit
       # unique reconstruit à chaque fois, pour éviter de gonfler le dépôt).
