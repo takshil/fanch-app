@@ -3,8 +3,12 @@ name: Déploiement o2switch
 # Déploie l'API Laravel (api/) et la SPA Vue (app/) sur un hébergement
 # mutualisé o2switch (cPanel / Apache) via SSH + rsync.
 #
-# Déclenchement : à chaque push sur `main`, ou manuellement depuis l'onglet
-# Actions ("Run workflow").
+# ⚠️ ALTERNATIVE MANUELLE. À n'utiliser que si l'accès SSH ENTRANT au serveur
+#    o2switch est ouvert depuis les runners GitHub. Si le SSH est filtré par
+#    le pare-feu de l'hébergeur (timeout sur le port 22), utilisez plutôt le
+#    workflow « pull » o2switch-deploy.yml (déploiement via cPanel Git).
+#
+# Déclenchement : MANUEL uniquement (onglet Actions → « Run workflow »).
 #
 # Configuration requise (Settings → Secrets and variables → Actions) :
 #
@@ -28,8 +32,6 @@ name: Déploiement o2switch
 # Voir deploy/o2switch/README.md pour la mise en place complète côté serveur.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # Empêche deux déploiements simultanés (bascule de symlink non concurrente).
@@ -73,6 +75,15 @@ jobs:
             missing=1
           fi
           [ "$missing" = "0" ] || { echo "Voir deploy/o2switch/README.md"; exit 1; }
+
+          # Avertissement si les chemins ne sont pas dans le dossier personnel :
+          # sur un mutualisé o2switch, seul /home/<compte>/... est inscriptible.
+          for p in API_PATH APP_PATH; do
+            case "${!p}" in
+              /home/*) : ;;
+              *) echo "::warning::$p='${!p}' ne commence pas par /home/. Sur o2switch, utilisez un chemin dans votre dossier personnel (ex: /home/moncompte/api.tyfanch.bzh), sinon rsync échouera avec 'Permission denied'." ;;
+            esac
+          done
 
       # ----------------------------------------------------------------
       # Build de l'API Laravel (PHP 8.4)
@@ -128,8 +139,30 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "${{ secrets.O2SWITCH_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          echo "SSH_OPTS=-i $HOME/.ssh/deploy_key -p $SSH_PORT -o BatchMode=yes" >> "$GITHUB_ENV"
+          # Récupération de la clé d'hôte, NON bloquante : si le serveur ne
+          # répond pas à ssh-keyscan, on n'échoue pas ici (l'option
+          # StrictHostKeyChecking=accept-new ajoutera la clé à la première
+          # connexion réelle, où l'erreur serait bien plus explicite).
+          if ! ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "::warning::ssh-keyscan n'a pas pu récupérer la clé d'hôte de $SSH_HOST:$SSH_PORT — bascule sur accept-new."
+          fi
+          echo "SSH_OPTS=-i $HOME/.ssh/deploy_key -p $SSH_PORT -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" >> "$GITHUB_ENV"
+
+      - name: Test de connexion SSH
+        run: |
+          echo "Test de connexion à $SSH_USER@$SSH_HOST:$SSH_PORT ..."
+          if ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" 'echo "Connexion SSH établie sur $(hostname)"'; then
+            echo "Connexion SSH OK."
+            exit 0
+          fi
+          # Échec : on relance en mode verbeux pour rendre la cause visible
+          # (timeout réseau, clé refusée, mauvais port, host inconnu...).
+          echo "::group::Diagnostic SSH détaillé (ssh -v)"
+          ssh -v $SSH_OPTS "$SSH_USER@$SSH_HOST" 'true' || true
+          echo "::endgroup::"
+          echo "::error::Connexion SSH impossible vers $SSH_HOST:$SSH_PORT (utilisateur $SSH_USER). Voir le diagnostic ci-dessus."
+          echo "::error::Pistes : (1) O2SWITCH_SSH_HOST/USER/PORT corrects ? (2) clé publique de O2SWITCH_SSH_KEY autorisée dans cPanel > Accès SSH ? (3) accès SSH activé et bon port ?"
+          exit 1
 
       # ----------------------------------------------------------------
       # Déploiement de l'API : rsync du code vers une nouvelle release,

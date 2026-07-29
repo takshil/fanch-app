@@ -1,0 +1,146 @@
+name: Build & publication branche o2switch
+
+# Stratégie de déploiement « pull » pour o2switch (quand le SSH entrant est
+# filtré par le pare-feu de l'hébergeur).
+#
+# Ce workflow ne se connecte PAS au serveur. Il se contente de :
+#   1. construire l'API Laravel (vendor + assets) et la SPA Vue en CI ;
+#   2. assembler un arbre prêt-à-servir (aucune compilation côté serveur) ;
+#   3. publier ce résultat sur la branche `o2switch-deploy`.
+#
+# C'est ensuite o2switch qui VA CHERCHER le code (connexion sortante HTTPS,
+# non filtrée) via cPanel → Git Version Control, et qui déploie en exécutant
+# le fichier `.cpanel.yml` présent à la racine de la branche.
+#
+# Voir deploy/o2switch/README.md (section « Déploiement via cPanel Git »).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: o2switch-deploy-branch
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  DEPLOY_BRANCH: o2switch-deploy
+
+jobs:
+  build-and-publish:
+    name: Build & publication
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------
+      # Build de l'API Laravel (PHP 8.4) : vendor de production + assets.
+      # ----------------------------------------------------------------
+      - name: Configuration de PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, bcmath, ctype, curl, dom, fileinfo, filter, hash, json, openssl, pcre, pdo, session, tokenizer, xml
+          tools: composer:v2
+          coverage: none
+
+      - name: Fichier .env de build (temporaire, non déployé)
+        working-directory: api
+        run: cp .env.example .env
+
+      - name: Installation des dépendances Composer (production)
+        working-directory: api
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Configuration de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            app/package-lock.json
+
+      - name: Build des assets de l'API (Laravel Vite)
+        working-directory: api
+        run: |
+          npm ci
+          npm run build
+
+      # ----------------------------------------------------------------
+      # Build de la SPA Vue.
+      # ----------------------------------------------------------------
+      - name: Build de la SPA Vue
+        working-directory: app
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      # ----------------------------------------------------------------
+      # Assemblage de l'arbre prêt-à-servir.
+      #   deploy/
+      #     ├── api/          (code + vendor + public/build, sans dev)
+      #     ├── app/          (build statique de la SPA)
+      #     └── .cpanel.yml   (recette de déploiement exécutée par cPanel)
+      # ----------------------------------------------------------------
+      - name: Assemblage de l'arbre de déploiement
+        run: |
+          set -euo pipefail
+          rm -rf deploy_tree
+          mkdir -p deploy_tree/api deploy_tree/app
+
+          # API : tout sauf node_modules / tests / .git / .env / logs.
+          rsync -a \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'tests' \
+            --exclude '.env' \
+            --exclude '.env.backup' \
+            --exclude 'storage/logs/*' \
+            api/ deploy_tree/api/
+
+          # La SPA : uniquement le build statique.
+          cp -a app/dist/. deploy_tree/app/
+
+          # Recette de déploiement cPanel à la racine de la branche.
+          cp deploy/o2switch/cpanel.yml deploy_tree/.cpanel.yml
+
+          # On retire le .gitignore de l'API qui exclut vendor/ et
+          # public/build : sur la branche de déploiement, ils DOIVENT être
+          # versionnés (le serveur ne compile rien).
+          rm -f deploy_tree/api/.gitignore
+
+      # ----------------------------------------------------------------
+      # Publication sur la branche `o2switch-deploy` (historique à commit
+      # unique reconstruit à chaque fois, pour éviter de gonfler le dépôt).
+      # ----------------------------------------------------------------
+      - name: Publication de la branche o2switch-deploy
+        run: |
+          set -euo pipefail
+          cd deploy_tree
+          git init -q
+          git checkout -q -b "$DEPLOY_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Build o2switch depuis ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" "$DEPLOY_BRANCH"
+
+      - name: Récapitulatif
+        run: |
+          {
+            echo "### Branche de déploiement o2switch publiée :package:"
+            echo ""
+            echo "- Branche : \`$DEPLOY_BRANCH\`"
+            echo "- Source : \`${GITHUB_SHA::7}\`"
+            echo ""
+            echo "o2switch peut maintenant récupérer et déployer cette branche"
+            echo "via **cPanel → Git Version Control** (voir deploy/o2switch/README.md)."
+          } >> "$GITHUB_STEP_SUMMARY"
