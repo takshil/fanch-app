@@ -74,6 +74,15 @@ jobs:
           fi
           [ "$missing" = "0" ] || { echo "Voir deploy/o2switch/README.md"; exit 1; }
 
+          # Avertissement si les chemins ne sont pas dans le dossier personnel :
+          # sur un mutualisé o2switch, seul /home/<compte>/... est inscriptible.
+          for p in API_PATH APP_PATH; do
+            case "${!p}" in
+              /home/*) : ;;
+              *) echo "::warning::$p='${!p}' ne commence pas par /home/. Sur o2switch, utilisez un chemin dans votre dossier personnel (ex: /home/moncompte/api.tyfanch.bzh), sinon rsync échouera avec 'Permission denied'." ;;
+            esac
+          done
+
       # ----------------------------------------------------------------
       # Build de l'API Laravel (PHP 8.4)
       # ----------------------------------------------------------------
@@ -140,11 +149,18 @@ jobs:
       - name: Test de connexion SSH
         run: |
           echo "Test de connexion à $SSH_USER@$SSH_HOST:$SSH_PORT ..."
-          if ! ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" 'echo "Connexion SSH établie sur $(hostname)"'; then
-            echo "::error::Impossible de se connecter en SSH à $SSH_HOST:$SSH_PORT avec l'utilisateur $SSH_USER."
-            echo "::error::Vérifiez : (1) O2SWITCH_SSH_HOST/USER/PORT, (2) que la clé publique associée à O2SWITCH_SSH_KEY est autorisée dans cPanel, (3) que l'accès SSH est activé et que le port est le bon."
-            exit 1
+          if ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" 'echo "Connexion SSH établie sur $(hostname)"'; then
+            echo "Connexion SSH OK."
+            exit 0
           fi
+          # Échec : on relance en mode verbeux pour rendre la cause visible
+          # (timeout réseau, clé refusée, mauvais port, host inconnu...).
+          echo "::group::Diagnostic SSH détaillé (ssh -v)"
+          ssh -v $SSH_OPTS "$SSH_USER@$SSH_HOST" 'true' || true
+          echo "::endgroup::"
+          echo "::error::Connexion SSH impossible vers $SSH_HOST:$SSH_PORT (utilisateur $SSH_USER). Voir le diagnostic ci-dessus."
+          echo "::error::Pistes : (1) O2SWITCH_SSH_HOST/USER/PORT corrects ? (2) clé publique de O2SWITCH_SSH_KEY autorisée dans cPanel > Accès SSH ? (3) accès SSH activé et bon port ?"
+          exit 1
 
       # ----------------------------------------------------------------
       # Déploiement de l'API : rsync du code vers une nouvelle release,
