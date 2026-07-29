@@ -20,7 +20,10 @@ deployment:
   tasks:
     - 'export API_PATH="$HOME/api.tyfanch.bzh"'
     - 'export APP_PATH="$HOME/app.tyfanch.bzh"'
-    - 'export PHP="/opt/cpanel/ea-php84/root/usr/bin/php"'
+    # Detecte automatiquement le PHP CLI le plus recent installe (ea-phpXX),
+    # sinon retombe sur le php du PATH. Evite de coder un chemin en dur.
+    - 'export PHP="$(ls -1 /opt/cpanel/ea-php*/root/usr/bin/php 2>/dev/null | sort -V | tail -n1)"; [ -x "$PHP" ] || export PHP="$(command -v php || echo php)"'
+    - 'echo "PHP utilise : $PHP" && "$PHP" -v'
     - '/bin/mkdir -p "$API_PATH/shared" "$API_PATH/app"'
     - '/usr/bin/rsync -a --delete --exclude ".env" --exclude "storage" api/ "$API_PATH/app/"'
     - 'test -f "$API_PATH/shared/.env" || /bin/cp "$API_PATH/app/.env.o2switch.example" "$API_PATH/shared/.env"'
