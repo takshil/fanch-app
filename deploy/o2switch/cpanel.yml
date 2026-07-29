@@ -23,15 +23,19 @@ deployment:
     # On utilise le `php` du PATH : c'est la version selectionnee dans cPanel
     # (« Selectionner une version de PHP »). Assurez-vous qu'elle est >= 8.3.
     - 'export PHP=php'
-    - 'echo "PHP utilise : $(command -v php)" && php -v'
+    # Racine du depot clone. IMPORTANT : capturee AVANT tout `cd`, car les
+    # taches partagent le meme shell et les sources (api/, app/) doivent
+    # toujours etre resolues depuis cette racine, pas depuis le cwd courant.
+    - 'export REPO="$(pwd)"'
+    - 'echo "PHP utilise : $(command -v php)" && php -v && echo "REPO : $REPO"'
     - '/bin/mkdir -p "$API_PATH/shared" "$API_PATH/app"'
-    - '/usr/bin/rsync -a --delete --exclude ".env" --exclude "storage" api/ "$API_PATH/app/"'
+    - '/usr/bin/rsync -a --delete --exclude ".env" --exclude "storage" --exclude ".well-known" "$REPO/api/" "$API_PATH/app/"'
     - 'test -f "$API_PATH/shared/.env" || /bin/cp "$API_PATH/app/.env.o2switch.example" "$API_PATH/shared/.env"'
     - '/bin/ln -sfn "$API_PATH/shared/.env" "$API_PATH/app/.env"'
-    - 'test -d "$API_PATH/shared/storage" || /bin/cp -a api/storage "$API_PATH/shared/storage"'
+    - 'test -d "$API_PATH/shared/storage" || /bin/cp -a "$REPO/api/storage" "$API_PATH/shared/storage"'
     - '/bin/ln -sfn "$API_PATH/shared/storage" "$API_PATH/app/storage"'
-    - 'cd "$API_PATH/app" && $PHP artisan storage:link --force || true'
-    - 'cd "$API_PATH/app" && $PHP artisan migrate --force'
-    - 'cd "$API_PATH/app" && $PHP artisan config:cache && $PHP artisan route:cache && $PHP artisan view:cache'
+    - '$PHP "$API_PATH/app/artisan" storage:link --force || true'
+    - '$PHP "$API_PATH/app/artisan" migrate --force'
+    - '$PHP "$API_PATH/app/artisan" config:cache && $PHP "$API_PATH/app/artisan" route:cache && $PHP "$API_PATH/app/artisan" view:cache'
     - '/bin/mkdir -p "$APP_PATH"'
-    - '/usr/bin/rsync -a --delete app/ "$APP_PATH/"'
+    - '/usr/bin/rsync -a --delete --exclude ".well-known" "$REPO/app/" "$APP_PATH/"'
