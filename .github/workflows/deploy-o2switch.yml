@@ -3,8 +3,12 @@ name: Déploiement o2switch
 # Déploie l'API Laravel (api/) et la SPA Vue (app/) sur un hébergement
 # mutualisé o2switch (cPanel / Apache) via SSH + rsync.
 #
-# Déclenchement : à chaque push sur `main`, ou manuellement depuis l'onglet
-# Actions ("Run workflow").
+# ⚠️ ALTERNATIVE MANUELLE. À n'utiliser que si l'accès SSH ENTRANT au serveur
+#    o2switch est ouvert depuis les runners GitHub. Si le SSH est filtré par
+#    le pare-feu de l'hébergeur (timeout sur le port 22), utilisez plutôt le
+#    workflow « pull » o2switch-deploy.yml (déploiement via cPanel Git).
+#
+# Déclenchement : MANUEL uniquement (onglet Actions → « Run workflow »).
 #
 # Configuration requise (Settings → Secrets and variables → Actions) :
 #
@@ -28,8 +32,6 @@ name: Déploiement o2switch
 # Voir deploy/o2switch/README.md pour la mise en place complète côté serveur.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 # Empêche deux déploiements simultanés (bascule de symlink non concurrente).

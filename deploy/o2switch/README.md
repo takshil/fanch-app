@@ -1,17 +1,20 @@
 # Déploiement sur o2switch
 
-Pipeline de déploiement continu de **Fanch** vers un hébergement mutualisé
-**o2switch** (cPanel / Apache, PHP 8.3, MySQL, accès SSH).
+Déploiement continu de **Fanch** (API Laravel `api/` + SPA Vue `app/`) vers un
+hébergement mutualisé **o2switch** (cPanel / Apache, PHP 8.4, MySQL).
 
-Le workflow [`/.github/workflows/deploy-o2switch.yml`](../../.github/workflows/deploy-o2switch.yml)
-construit puis déploie automatiquement, à chaque push sur `main` (ou
-manuellement) :
+Deux approches sont fournies. **Sur o2switch, le pare-feu de l'hébergeur bloque
+généralement les connexions SSH entrantes depuis les runners GitHub** (timeout
+sur le port 22) : dans ce cas, utilisez l'approche « pull » ci-dessous.
 
-- **`api/`** — API Laravel, déployée par rsync/SSH avec une stratégie de
-  *releases* + symlink `current` (bascule atomique), `.env` et `storage`
-  partagés, migrations et caches Laravel.
-- **`app/`** — SPA Vue, buildée par Vite et déployée en statique dans le
-  web root, avec un `.htaccess` de repli pour le mode *history*.
+| Approche | Workflow | Quand l'utiliser |
+| -------- | -------- | ---------------- |
+| **A. Pull via cPanel Git** (recommandée) | [`o2switch-deploy.yml`](../../.github/workflows/o2switch-deploy.yml) | Cas général. C'est **o2switch qui va chercher le code** (sortant HTTPS, non filtré). Aucune connexion entrante. |
+| **B. Push SSH/rsync** (manuelle) | [`deploy-o2switch.yml`](../../.github/workflows/deploy-o2switch.yml) | Seulement si le SSH entrant est ouvert. Déclenchement manuel. |
+
+Voir la **section « Déploiement via cPanel Git (approche A) »** plus bas pour
+la mise en place recommandée. Les sections 1 à 5 qui suivent décrivent
+l'approche B (SSH).
 
 ---
 
@@ -156,3 +159,103 @@ Les déploiements suivants sont entièrement automatiques.
   ```
 - **Déploiement manuel / ponctuel** : le workflow accepte le déclenchement
   `workflow_dispatch` depuis l'onglet *Actions* de GitHub.
+
+---
+
+## Déploiement via cPanel Git (approche A — recommandée)
+
+Ici, **GitHub ne se connecte jamais au serveur**. Le workflow
+[`o2switch-deploy.yml`](../../.github/workflows/o2switch-deploy.yml) construit
+tout en CI (Laravel `vendor/` + assets + SPA) et publie un arbre prêt-à-servir
+sur la branche **`o2switch-deploy`**. C'est ensuite **o2switch qui récupère
+cette branche** (connexion sortante HTTPS vers GitHub, non filtrée) et déploie
+en exécutant le fichier [`.cpanel.yml`](./cpanel.yml) présent à sa racine.
+
+```
+ push main ─▶ GitHub Actions ─▶ build ─▶ branche o2switch-deploy
+                                                 │
+                    (o2switch tire le code, sortant HTTPS)
+                                                 ▼
+                          cPanel Git ─▶ exécute .cpanel.yml ─▶ site en ligne
+```
+
+### 1. Personnaliser la recette de déploiement
+
+Éditez [`deploy/o2switch/cpanel.yml`](./cpanel.yml) et renseignez les 3
+variables du haut (chemins **absolus** dans votre dossier o2switch) :
+
+```yaml
+- export API_PATH="$HOME/api.tyfanch.bzh"   # docroot API = $API_PATH/app/public
+- export APP_PATH="$HOME/app.tyfanch.bzh"   # docroot de la SPA
+- export PHP="/opt/cpanel/ea-php84/root/usr/bin/php"
+```
+
+Ce fichier est copié automatiquement à la racine de la branche
+`o2switch-deploy` par le workflow. Après édition, poussez sur `main` : le
+workflow régénère la branche.
+
+### 2. Créer les sous-domaines (cPanel)
+
+- `api.<domaine>` → document root `$API_PATH/app/public`
+- `app.<domaine>` → document root `$APP_PATH`
+
+> Ces dossiers seront créés au premier déploiement ; vous pourrez ajuster les
+> docroots juste après.
+
+### 3. Connecter le dépôt dans cPanel
+
+**cPanel → Git™ Version Control → Créer**, en mode « Cloner un dépôt » :
+
+- **URL du clone** (dépôt privé → jeton d'accès en lecture seule) :
+  ```
+  https://<TOKEN_GITHUB>@github.com/takshil/fanch-app.git
+  ```
+  Créez le jeton sur GitHub : *Settings → Developer settings → Personal access
+  tokens → Fine-grained*, accès **Contents: Read-only** sur ce dépôt.
+- **Chemin du dépôt** : ex. `/home/<compte>/repositories/fanch-app`
+
+Une fois cloné, dans l'onglet **Gérer** du dépôt :
+1. **Branche extraite** : sélectionnez `o2switch-deploy`.
+2. **Mettre à jour depuis la télécommande** (pull), puis **Déployer le
+   HEAD Commit** → exécute `.cpanel.yml`.
+
+### 4. Premier déploiement (config de prod)
+
+Au tout premier déploiement, `.cpanel.yml` crée `shared/.env` depuis le modèle
+puis les migrations peuvent échouer tant que la base n'est pas renseignée.
+Éditez la config, puis redéployez :
+
+```bash
+ssh ...   # ou via le gestionnaire de fichiers cPanel
+nano ~/api.tyfanch.bzh/shared/.env         # MySQL, APP_URL, mail...
+/opt/cpanel/ea-php84/root/usr/bin/php ~/api.tyfanch.bzh/app/artisan key:generate --show
+# -> copiez la valeur base64:... dans APP_KEY
+```
+
+Relancez ensuite **Déployer le HEAD Commit** dans cPanel.
+
+### 5. Automatiser le déploiement
+
+cPanel ne reçoit pas de webhook depuis GitHub. Deux options :
+
+- **Cron cPanel** (simple, léger décalage) — pull + déploiement toutes les
+  10 min via l'API cPanel :
+  ```
+  */10 * * * * /usr/local/cpanel/bin/uapi --output=json VersionControl update repository_root="$HOME/repositories/fanch-app" >/dev/null 2>&1 && /usr/local/cpanel/bin/uapi --output=json VersionControlDeployment create repository_root="$HOME/repositories/fanch-app" >/dev/null 2>&1
+  ```
+  Le déploiement ne s'exécute réellement que s'il y a de nouveaux commits.
+
+- **Déclenchement immédiat via webhook HTTPS** (le port 443 du site, lui, est
+  ouvert) : un petit script PHP protégé par un secret, appelé par une étape
+  `curl` en fin de workflow, qui lance les deux commandes `uapi` ci-dessus.
+  Demandez-le si vous voulez cette variante.
+
+### Notes
+
+- **Aucune compilation côté serveur** : `vendor/` et les assets sont buildés
+  en CI et versionnés sur la branche `o2switch-deploy`. Le serveur n'a besoin
+  que de **PHP 8.4**.
+- **Rollback** : redéployez un commit précédent de `o2switch-deploy` depuis
+  l'onglet *Gérer* de cPanel Git, ou re-lancez le workflow sur un ancien SHA.
+- La branche `o2switch-deploy` est **générée automatiquement** (historique à
+  commit unique reconstruit à chaque build) : ne la modifiez pas à la main.
