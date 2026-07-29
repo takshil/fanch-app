@@ -81,7 +81,20 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
         run: |
           npm ci
+          # VITE_API_URL doit être une VARIABLE de dépôt (Settings > Secrets and
+          # variables > Actions > onglet Variables — PAS Secrets), sinon la SPA
+          # est buildée sur l'URL de dev (http://127.0.0.1:8000/api).
+          if [ -z "$VITE_API_URL" ]; then
+            echo "::error::La variable VITE_API_URL est vide. Créez-la dans Settings > Secrets and variables > Actions > onglet 'Variables' (ex: https://api.tyfanch.bzh/api)."
+            exit 1
+          fi
+          # On l'écrit dans un .env.production : Vite charge ce fichier de façon
+          # déterministe au build (plus fiable que de dépendre de process.env).
+          echo "VITE_API_URL=${VITE_API_URL}" > .env.production
+          echo "Build SPA avec VITE_API_URL=${VITE_API_URL}"
           npm run build
+          echo "Vérification (occurrences de l'URL dans le build) :"
+          grep -rc "$VITE_API_URL" dist/assets >/dev/null && echo "  URL API bien intégrée." || echo "::warning::URL API introuvable dans le build."
 
       # ----------------------------------------------------------------
       # Assemblage de l'arbre prêt-à-servir.
