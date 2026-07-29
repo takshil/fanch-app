@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
@@ -8,11 +7,11 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
-            fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
-                }),
-            ],
+            // Note : la fonctionnalité "fonts" (bunny/google) télécharge des
+            // polices distantes pendant `vite build` et fait échouer le build
+            // en CI si le réseau n'est pas joignable. On la retire : l'API
+            // sert du JSON, la page d'accueil Laravel utilise la pile de
+            // polices système en repli (voir resources/css/app.css).
         }),
         tailwindcss(),
     ],
