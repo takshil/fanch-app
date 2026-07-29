@@ -20,7 +20,12 @@ deployment:
   tasks:
     - 'export API_PATH="$HOME/api.tyfanch.bzh"'
     - 'export APP_PATH="$HOME/app.tyfanch.bzh"'
-    - 'export PHP="/opt/cpanel/ea-php84/root/usr/bin/php"'
+    # Choisit un PHP CLI >= 8.3 (Laravel l'exige). Sur o2switch, `php` du PATH
+    # est la version selectionnee (8.4), tandis que /opt/cpanel/ea-php* peut ne
+    # contenir qu'une vieille version : on teste donc la version de chaque
+    # candidat et on retient le premier >= 8.3.
+    - 'for c in php /opt/cpanel/ea-php84/root/usr/bin/php /opt/cpanel/ea-php83/root/usr/bin/php; do v="$(command -v "$c" 2>/dev/null)"; [ -n "$v" ] || continue; "$v" -r "exit(PHP_VERSION_ID>=80300?0:1);" 2>/dev/null && { export PHP="$v"; break; }; done; [ -n "${PHP:-}" ] || export PHP=php'
+    - 'echo "PHP utilise : $PHP" && "$PHP" -v'
     - '/bin/mkdir -p "$API_PATH/shared" "$API_PATH/app"'
     - '/usr/bin/rsync -a --delete --exclude ".env" --exclude "storage" api/ "$API_PATH/app/"'
     - 'test -f "$API_PATH/shared/.env" || /bin/cp "$API_PATH/app/.env.o2switch.example" "$API_PATH/shared/.env"'
