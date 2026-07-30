@@ -1,0 +1,41 @@
+---
+# Recette de déploiement exécutée par o2switch (cPanel -> Git Version Control)
+# lors du "Deploy HEAD Commit" de la branche `o2switch-deploy`.
+#
+# Ce fichier est publié à la racine de la branche `o2switch-deploy` par le
+# workflow .github/workflows/o2switch-deploy.yml. Le depot clone par cPanel
+# contient deja tout le necessaire (vendor + assets buildes) : le serveur ne
+# compile rien, il ne fait que copier les fichiers et lancer artisan.
+#
+# >>> PERSONNALISEZ les 3 variables ci-dessous (chemins ABSOLUS dans votre
+#     dossier personnel o2switch). $HOME = /home/<votre-compte>.
+#     ATTENTION : utilisez $HOME et NON ~ (le ~ entre guillemets ne s'etend pas).
+#
+#   API_PATH : dossier de l'API. Le docroot du sous-domaine api.<domaine>
+#              doit pointer sur $API_PATH/app/public
+#   APP_PATH : docroot du sous-domaine de la SPA (app.<domaine>)
+#   PHP      : commande PHP CLI (php = version choisie dans cPanel, doit etre >= 8.3)
+
+deployment:
+  tasks:
+    - 'export API_PATH="$HOME/api.tyfanch.bzh"'
+    - 'export APP_PATH="$HOME/app.tyfanch.bzh"'
+    # On utilise le `php` du PATH : c'est la version selectionnee dans cPanel
+    # (« Selectionner une version de PHP »). Assurez-vous qu'elle est >= 8.3.
+    - 'export PHP=php'
+    # Racine du depot clone. IMPORTANT : capturee AVANT tout `cd`, car les
+    # taches partagent le meme shell et les sources (api/, app/) doivent
+    # toujours etre resolues depuis cette racine, pas depuis le cwd courant.
+    - 'export REPO="$(pwd)"'
+    - 'echo "PHP utilise : $(command -v php)" && php -v && echo "REPO : $REPO"'
+    - '/bin/mkdir -p "$API_PATH/shared" "$API_PATH/app"'
+    - '/usr/bin/rsync -a --delete --exclude ".env" --exclude "storage" --exclude ".well-known" "$REPO/api/" "$API_PATH/app/"'
+    - 'test -f "$API_PATH/shared/.env" || /bin/cp "$API_PATH/app/.env.o2switch.example" "$API_PATH/shared/.env"'
+    - '/bin/ln -sfn "$API_PATH/shared/.env" "$API_PATH/app/.env"'
+    - 'test -d "$API_PATH/shared/storage" || /bin/cp -a "$REPO/api/storage" "$API_PATH/shared/storage"'
+    - '/bin/ln -sfn "$API_PATH/shared/storage" "$API_PATH/app/storage"'
+    - '$PHP "$API_PATH/app/artisan" storage:link --force || true'
+    - '$PHP "$API_PATH/app/artisan" migrate --force'
+    - '$PHP "$API_PATH/app/artisan" config:cache && $PHP "$API_PATH/app/artisan" route:cache && $PHP "$API_PATH/app/artisan" view:cache'
+    - '/bin/mkdir -p "$APP_PATH"'
+    - '/usr/bin/rsync -a --delete --exclude ".well-known" "$REPO/app/" "$APP_PATH/"'
