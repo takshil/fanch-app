@@ -18,6 +18,14 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement de déploiement (détermine les variables lues, dont VITE_API_URL)"
+        type: choice
+        options:
+          - recette
+          - production
+        default: recette
 
 concurrency:
   group: o2switch-deploy-branch
@@ -33,6 +41,12 @@ jobs:
   build-and-publish:
     name: Build & publication
     runs-on: ubuntu-latest
+    # Déclarer l'environnement est INDISPENSABLE : sans cela, une variable
+    # VITE_API_URL scopée à un environnement (ex: « recette ») n'est PAS lue et
+    # la SPA retombe sur l'URL de dev http://127.0.0.1:8000/api.
+    # Sur push (input vide) on cible « recette » par défaut ; un lancement
+    # manuel permet de choisir « production ».
+    environment: ${{ inputs.environment || 'recette' }}
 
     steps:
       - name: Récupération du code
