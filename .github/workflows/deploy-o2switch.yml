@@ -33,17 +33,26 @@ name: Déploiement o2switch
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement de déploiement (détermine les secrets/variables lus, dont VITE_API_URL)"
+        type: choice
+        options:
+          - recette
+          - production
+        default: recette
 
-# Empêche deux déploiements simultanés (bascule de symlink non concurrente).
+# Empêche deux déploiements simultanés vers le MÊME environnement (bascule de
+# symlink non concurrente). recette et production peuvent tourner en parallèle.
 concurrency:
-  group: deploy-o2switch
+  group: deploy-o2switch-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     name: Build & déploiement
     runs-on: ubuntu-latest
-    environment: recette
+    environment: ${{ inputs.environment }}
 
     env:
       PHP_BIN: ${{ vars.O2SWITCH_PHP_BIN || 'php' }}
